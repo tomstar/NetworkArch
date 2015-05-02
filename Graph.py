@@ -1,3 +1,11 @@
+class Graph(object):
+    def __init__(self):
+        self._nodes=[]
+
+    def addNode(self, n):
+        self._nodes.append(n)
+        print('Node {} added to Graph'.format(n.getID()))
+
 class Node(object):
 
     def __init__(self, UID):
@@ -9,7 +17,7 @@ class Node(object):
 
     def add_connection(self, n, metric=0):
         self._connections.append(Edge(n, metric))
-        print("Adding connection to Node {0} with metric {1}".format(n.getID(), metric)) 
+        print('Adding connection to Node {0} with metric {1}'.format(n.getID(), metric)) 
 
 class Edge(object):
     
