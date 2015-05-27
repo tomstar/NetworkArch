@@ -1,11 +1,38 @@
-class Graph(object):
+class Graph(set):
 
     def __init__(self):
+        super(Graph, self).__init__(self)
         self._nodes=[]
+
+    def __len__(self):
+        return len(self._nodes)
 
     def addNode(self, n):
         self._nodes.append(n)
         print('Node {} added to Graph'.format(n.getID()))
+
+    def adjacencyToGraph(self, adj):
+        # start by creating the nodes
+        for (ind, el) in enumerate(adj):
+            self.addNode(Node(ind))
+        # set up connections between nodes now
+        for (ind, el) in enumerate(self._nodes):
+            for (ind_inner, el_inner) in enumerate(self._nodes):
+                if adj[ind][ind_inner]:
+                    el.add_connection([el_inner], adj[ind][ind_inner])
+
+    def graphToAdjacency(self):
+        adj = []
+        for k in self.nodes:
+            tmp = [False] * len(self)
+            for l in k.connections:
+                tmp[self.nodes.index(l.destination)] = l.metric
+            adj.append(tmp)
+        return adj
+
+    @property
+    def nodes(self):
+        return self._nodes
 
 
 class Node(object):
@@ -13,20 +40,34 @@ class Node(object):
     def __init__(self, UID):
         self._ID=UID
         self._connections=[]
+        print('Creating Node with ID {0}'.format(UID))
+
+    @property
+    def connections(self):
+        return self._connections
 
     def getID(self):
         return self._ID
 
-    def add_connection(self, n, metric=0):
-        self._connections.append(Edge(n, metric))
-        print('Adding connection to Node {0} with metric {1}'.format(n.getID(), metric)) 
-
+    def add_connection(self, nodes, metric=0):
+        for k in nodes:
+            self._connections.append(Edge(k, metric))
+            print('Adding connection {0}->{1} with metric {2}'
+                  .format(self.getID(), k.getID(), metric))
 
 class Edge(object):
-    
+
     def __init__(self, destination, metric):
         self._metric=metric
         self._destination=destination
+
+    @property
+    def destination(self):
+        return self._destination
+
+    @property
+    def metric(self):
+        return self._metric
 
     def get_Info(self):
         return (self._metric, self._destination)
