@@ -1,8 +1,14 @@
+import pickle
+
+
 class Graph(set):
 
     def __init__(self):
         super(Graph, self).__init__(self)
-        self._nodes=[]
+        self._nodes = []
+
+    def store(self, filename):
+        pickle.dump(self, open(filename, 'bw'))
 
     def __len__(self):
         return len(self._nodes)
@@ -13,6 +19,7 @@ class Graph(set):
 
     def adjacencyToGraph(self, adj):
         # start by creating the nodes
+        adj = [[False if x == 0 else x for x in node] for node in adj]
         for (ind, el) in enumerate(adj):
             self.addNode(Node(ind))
         # set up connections between nodes now
@@ -38,8 +45,8 @@ class Graph(set):
 class Node(object):
 
     def __init__(self, UID):
-        self._ID=UID
-        self._connections=[]
+        self._ID = UID
+        self._connections = []
         print('Creating Node with ID {0}'.format(UID))
 
     @property
@@ -55,11 +62,12 @@ class Node(object):
             print('Adding connection {0}->{1} with metric {2}'
                   .format(self.getID(), k.getID(), metric))
 
+
 class Edge(object):
 
     def __init__(self, destination, metric):
-        self._metric=metric
-        self._destination=destination
+        self._metric = metric
+        self._destination = destination
 
     @property
     def destination(self):

@@ -7,12 +7,14 @@ import Graph
 
 class GraphTest(unittest.TestCase):
     def test_buildFromAdjacency(self):
-        adj = [[False, 1, False, False], [1, False, 7, False], [3, 1, False, 4], [False, False, 2, False]]
+        adj = [[False, 1, False, False], [1, False, 7, False],
+               [3, 1, False, 4], [False, False, 2, False]]
         g = Graph.Graph()
         g.adjacencyToGraph(adj)
 
         self.assertEqual(len(g), 4)
-        self.assertEqual(len(g.nodes[0].connections), (len(adj[0]) - adj[0].count(False)))
+        self.assertEqual(len(g.nodes[0].connections),
+                         (len(adj[0]) - adj[0].count(False)))
         self.assertEqual(g.nodes[2].connections[-1].destination, g.nodes[3])
         self.assertEqual(adj, g.graphToAdjacency())
 
