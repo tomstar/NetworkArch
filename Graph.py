@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import pickle
 
 
@@ -41,13 +42,18 @@ class Graph(set):
     def nodes(self):
         return self._nodes
 
+    def countEdges(self):
+        return sum([len(a._connections) for a in self.nodes])
+
+    def printGraphStats(self):
+        print("Number of Nodes: {}\nNumber of Edges: {}\n"
+                .format(len(self.nodes),self.countEdges()))
 
 class Node(object):
 
     def __init__(self, UID):
         self._ID = UID
         self._connections = []
-        print('Creating Node with ID {0}'.format(UID))
 
     @property
     def connections(self):
@@ -59,8 +65,6 @@ class Node(object):
     def add_connection(self, nodes, metric=0):
         for k in nodes:
             self._connections.append(Edge(k, metric))
-            print('Adding connection {0}->{1} with metric {2}'
-                  .format(self.getID(), k.getID(), metric))
 
 
 class Edge(object):
