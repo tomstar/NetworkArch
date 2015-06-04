@@ -47,13 +47,19 @@ class Graph(set):
 
     def printGraphStats(self):
         print("Number of Nodes: {}\nNumber of Edges: {}\n"
-                .format(len(self.nodes),self.countEdges()))
+              .format(len(self.nodes), self.countEdges()))
+
 
 class Node(object):
 
     def __init__(self, UID):
         self._ID = UID
         self._connections = []
+        self._rx = []
+        self._tx = []
+
+    def updateTable(self):
+        pass
 
     @property
     def connections(self):
@@ -83,3 +89,23 @@ class Edge(object):
 
     def get_Info(self):
         return (self._metric, self._destination)
+
+
+class RoutingTableEntry(object):
+
+    def __init__(self, destination,
+                 nextHop, metric=None, seqNum=None):
+        self.destination = destination
+        self.nextHop = nextHop
+        self.metric = metric
+        self.SeqNum = seqNum
+
+    def updateEntry(self, challengingEntry):
+        if self.SeqNum < challengingEntry.SeqNum:
+            return challengingEntry
+        elif (self.SeqNum == challengingEntry.SeqNum and
+              self.metric > challengingEntry.metric):
+            return challengingEntry
+        else:
+            return self
+
