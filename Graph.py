@@ -3,7 +3,8 @@ import pickle
 
 
 class Graph(set):
-
+    """Graph class containing Nodes and Edges. Edges can be unidirectional
+    with different weight for the directions"""
     def __init__(self):
         super(Graph, self).__init__(self)
         self._nodes = []
@@ -16,7 +17,6 @@ class Graph(set):
 
     def addNode(self, n):
         self._nodes.append(n)
-        print('Node {} added to Graph'.format(n.getID()))
 
     def adjacencyToGraph(self, adj):
         # start by creating the nodes
@@ -42,6 +42,12 @@ class Graph(set):
     def nodes(self):
         return self._nodes
 
+    @property
+    def edges(self):
+        _edges = []
+        [_edges.extend(x.connections) for x in self.nodes]
+        return _edges
+
     def countEdges(self):
         return sum([len(a._connections) for a in self.nodes])
 
@@ -60,6 +66,15 @@ class Node(object):
 
     def updateTable(self):
         pass
+
+    def queuePacket(self, packet):
+        self._tx.append(packet)
+
+    def sendPacket(self, packet):
+        pass
+
+    def receivePacket(self, packet):
+        self._rx.append(packet)
 
     @property
     def connections(self):
