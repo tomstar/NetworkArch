@@ -3,8 +3,11 @@ import pickle
 
 
 class Graph(set):
-    """Graph class containing Nodes and Edges. Edges can be unidirectional
-    with different weight for the directions"""
+    """
+    Graph class containing Nodes and Edges.
+
+    Edges can be unidirectional with different weight for the directions.
+    """
     def __init__(self):
         super(Graph, self).__init__(self)
         self._nodes = []
@@ -70,8 +73,8 @@ class Node(object):
     def queuePacket(self, packet):
         self._tx.append(packet)
 
-    def sendPacket(self, packet):
-        pass
+    def sendPacket(self, packet, edge):
+        [item.addPacket(packet) for item in edge]
 
     def receivePacket(self, packet):
         self._rx.append(packet)
@@ -93,6 +96,7 @@ class Edge(object):
     def __init__(self, destination, metric):
         self._metric = metric
         self._destination = destination
+        self._transit = []
 
     @property
     def destination(self):
@@ -101,6 +105,22 @@ class Edge(object):
     @property
     def metric(self):
         return self._metric
+
+    def addPacket(self, incomingPacket):
+        self._transit.append(incomingPacket)
+        incomingPacket.transitTime = self._metric
+
+    def process(self):
+        """
+        Process the items waiting on the edge.
+        There are no collisions and as such multiple
+        packets can be sent over the Edge in a single timestep.
+
+        Add packets to receiving node and remove from Edge if their transittime is up
+        else keep them on the Edge and reduce remaining time by 1.
+        """
+        [(item.destination.receivePacket(item) and self._transit.remove(item))
+         if item.transittime<=1 else item.cycle() for item in self._transit]
 
     def get_Info(self):
         return (self._metric, self._destination)
@@ -123,4 +143,3 @@ class RoutingTableEntry(object):
             return challengingEntry
         else:
             return self
-

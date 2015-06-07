@@ -1,18 +1,23 @@
 class Packet(object):
 
-    def __init__(self, dest, source, path=None):
+    def __init__(self, dest, source, table = None, path=None):
         self.destination = dest
         self.source = source
         self.path = path
         self.transitTime = 1
+        self.RoutingTable = table
 
+    def cycle(self):
+        self.transitTime = self.transitTime-1
 
 class ControlPacket(Packet):
 
     def __init__(self, dest, source, table, path=None):
-        super(ControlPacket, self).__init__(dest, source, path)
-        self.RoutingTable = table
-        
+        super(ControlPacket, self).__init__(dest, source, table, path)
+
+
 
 class DataPacket(Packet):
-    pass
+    def __init__(self, dest, source, table, data, path):
+        super(ControlPacket, self).__init__(dest, source, table, path)
+        self.data = data

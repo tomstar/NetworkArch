@@ -4,6 +4,7 @@ __author__ = 'Thomas'
 import unittest
 
 import Graph
+import Packet
 
 
 class GraphTest(unittest.TestCase):
@@ -57,6 +58,14 @@ class GraphTest(unittest.TestCase):
         g.adjacencyToGraph(adj)
         self.assertNotEqual(len(g.edges), 0)
         self.assertEqual(g.countEdges(), len(g.edges))
+
+    def test_PacketPropagation(self):
+        adj = [[1, 1, 2, 1], [1, 1, 7, 3],
+               [3, 1, 1, 4], [5, 4, 2, 1]]
+        g = Graph.Graph()
+        g.adjacencyToGraph(adj)
+        p1 = Packet.ControlPacket(dest=g.nodes(1), source=g.nodes(2))
+
 
 if __name__ == '__main__':
     unittest.main()
