@@ -19,5 +19,5 @@ class ControlPacket(Packet):
 
 class DataPacket(Packet):
     def __init__(self, dest, source, table, data, path):
-        super(ControlPacket, self).__init__(dest, source, table, path)
+        super(DataPacket, self).__init__(dest, source, table, path)
         self.data = data

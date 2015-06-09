@@ -15,6 +15,10 @@ class Graph(set):
     def store(self, filename):
         pickle.dump(self, open(filename, 'bw'))
 
+    def updateRoutingTables(self):
+        for node in self.nodes:
+            node.updateTableFromConnections()
+
     def __len__(self):
         return len(self._nodes)
 
@@ -66,9 +70,17 @@ class Node(object):
         self._connections = []
         self._rx = []
         self._tx = []
+        self._routingTable = []
 
-    def updateTable(self):
-        pass
+    def updateTableFromConnections(self):
+        for item in self._connections:
+            try:
+                self._routingTable.index(item.destination)
+            except ValueError:
+                self._routingTable.append(RoutingTableEntry(item.destination,
+                                                            item.destination,
+                                                            item.metric,
+                                                            None))
 
     def queuePacket(self, packet):
         self._tx.append(packet)
