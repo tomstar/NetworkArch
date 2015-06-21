@@ -1,5 +1,8 @@
 #!/usr/bin/python3
 import pickle
+import copy
+
+import Exceptions as ex
 
 
 class Graph(set):
@@ -26,6 +29,10 @@ class Graph(set):
         self._nodes.append(n)
 
     def adjacencyToGraph(self, adj):
+        for n in adj:
+            if len(n) != len(adj):
+                raise ex.InvalidAdjacencyError()
+
         # start by creating the nodes
         adj = [[False if x == 0 else x for x in node] for node in adj]
         for (ind, el) in enumerate(adj):
@@ -62,6 +69,12 @@ class Graph(set):
         print("Number of Nodes: {}\nNumber of Edges: {}\n"
               .format(len(self.nodes), self.countEdges()))
 
+    def process(self):
+        for k in self.edges:
+            k.process()
+        for k in self.nodes:
+            k.process()
+
 
 class Node(object):
 
@@ -86,7 +99,10 @@ class Node(object):
         self._tx.append(packet)
 
     def sendPacket(self, packet, edge):
-        [item.addPacket(packet) for item in edge]
+        p=copy.copy(packet)
+        for e in edge:
+            p.nextHop = e.destination
+            [item.addPacket(p) for item in edge]
 
     def receivePacket(self, packet):
         self._rx.append(packet)
@@ -101,6 +117,9 @@ class Node(object):
     def add_connection(self, nodes, metric=0):
         for k in nodes:
             self._connections.append(Edge(k, metric))
+
+    def process(self):
+        pass
 
 
 class Edge(object):
@@ -128,11 +147,13 @@ class Edge(object):
         There are no collisions and as such multiple
         packets can be sent over the Edge in a single timestep.
 
-        Add packets to receiving node and remove from Edge if their transittime is up
+        Add packets to receiving node and remove from Edge
+        if their transittime is up
         else keep them on the Edge and reduce remaining time by 1.
         """
-        [(item.destination.receivePacket(item) and self._transit.remove(item))
-         if item.transittime<=1 else item.cycle() for item in self._transit]
+        [(item.nextHop.receivePacket(item) and self._transit.remove(item))
+         if item.transitTime <= 1 else item.cycle()
+         for item in self._transit]
 
     def get_Info(self):
         return (self._metric, self._destination)
