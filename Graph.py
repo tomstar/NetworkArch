@@ -151,9 +151,12 @@ class Edge(object):
         if their transittime is up
         else keep them on the Edge and reduce remaining time by 1.
         """
-        [(item.nextHop.receivePacket(item) and self._transit.remove(item))
-         if item.transitTime <= 1 else item.cycle()
+        [self.handOff(item) if item.transitTime <= 1 else item.cycle()
          for item in self._transit]
+
+    def handOff(self, packet):
+        packet.nextHop.receivePacket(packet)
+        self._transit.remove(packet)
 
     def get_Info(self):
         return (self._metric, self._destination)

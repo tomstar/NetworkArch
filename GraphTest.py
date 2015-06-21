@@ -114,10 +114,17 @@ class GraphTest(unittest.TestCase):
     def test_transittime(self):
         g = Graph.Graph()
         g.adjacencyToGraph(GraphTest.cases[0])
-        g.nodes[0].sendPacket(Packet.ControlPacket(None, g.nodes[0],
+        g.nodes[0].sendPacket(Packet.ControlPacket(None, g.nodes[1],
                                                    None),
-                              g.nodes[0].connections)
-        g.process()
+                              g.nodes[1].connections)
+        for k in range(max([edge.metric for edge in
+                            g.nodes[1].connections])):
+            g.process()
+            print("processing")
+        for k in [edge.destination for edge in g.nodes[1].connections]:
+            print("{0} Packets in the receive queue of node {1}"
+                  .format(len(k._rx), k._ID))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -10,6 +10,7 @@ class Packet(object):
 
     def cycle(self):
         self.transitTime = self.transitTime-1
+        print("Packet waiting")
 
 
 class ControlPacket(Packet):
