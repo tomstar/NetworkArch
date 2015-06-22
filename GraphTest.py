@@ -2,6 +2,7 @@
 __author__ = 'Thomas'
 
 import unittest
+from random import sample
 
 import Graph
 import Packet
@@ -114,20 +115,24 @@ class GraphTest(unittest.TestCase):
                 pass
 
     def test_transittime(self):
-        g = Graph.Graph()
-        g.adjacencyToGraph(GraphTest.cases[0])
-        g.nodes[1].sendPacket(Packet.ControlPacket(None, g.nodes[1],
-                                                   None),
-                              g.nodes[1].connections)
-        for k in range(max([edge.metric for edge in
-                            g.nodes[1].connections])):
-            g.process()
-            for e in g.nodes[1].connections:
-                if k+1==e.metric:
-                    self.assertEqual(len(e.destination._rx), 1)
-                else:
-                    for packet in e._transit:
-                        self.assertGreaterEqual(packet.transitTime, 1)
+        for testcase in GraphTest.cases:
+            g = Graph.Graph()
+            g.adjacencyToGraph(testcase)
+            for node in g.nodes:
+                otherNodes = [n if n != node for n in g.nodes]
+                node.sendPacket(Packet.ControlPacket(None,
+                                                     sample(otherNodes, 1),
+                                                     None),
+                                g.nodes[1].connections)
+                for k in range(max([edge.metric for edge in
+                                    g.nodes[1].connections])):
+                    g.process()
+                    for e in g.nodes[1].connections:
+                        if k+1==e.metric:
+                            self.assertEqual(len(e.destination._rx), 1)
+                        else:
+                            for packet in e._transit:
+                                self.assertGreaterEqual(packet.transitTime, 1)
 
 
 if __name__ == '__main__':
