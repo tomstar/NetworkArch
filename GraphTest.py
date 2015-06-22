@@ -10,6 +10,8 @@ import Exceptions as customE
 
 class GraphTest(unittest.TestCase):
     cases = []
+    cases.append([[0, 1, 2, 1], [1, 0, 7, 3],
+                  [3, 1, 0, 4], [5, 4, 2, 0]])
     cases.append([[1, 1, 2, 1], [1, 1, 7, 3],
                   [3, 1, 1, 4], [5, 4, 2, 1]])
     cases.append([[False, 1, False, False], [1, False, 7, False],
@@ -114,16 +116,18 @@ class GraphTest(unittest.TestCase):
     def test_transittime(self):
         g = Graph.Graph()
         g.adjacencyToGraph(GraphTest.cases[0])
-        g.nodes[0].sendPacket(Packet.ControlPacket(None, g.nodes[1],
+        g.nodes[1].sendPacket(Packet.ControlPacket(None, g.nodes[1],
                                                    None),
                               g.nodes[1].connections)
         for k in range(max([edge.metric for edge in
                             g.nodes[1].connections])):
             g.process()
-            print("processing")
-        for k in [edge.destination for edge in g.nodes[1].connections]:
-            print("{0} Packets in the receive queue of node {1}"
-                  .format(len(k._rx), k._ID))
+            for e in g.nodes[1].connections:
+                if k+1==e.metric:
+                    self.assertEqual(len(e.destination._rx), 1)
+                else:
+                    for packet in e._transit:
+                        self.assertGreaterEqual(packet.transitTime, 1)
 
 
 if __name__ == '__main__':

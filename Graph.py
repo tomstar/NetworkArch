@@ -99,10 +99,10 @@ class Node(object):
         self._tx.append(packet)
 
     def sendPacket(self, packet, edge):
-        p=copy.copy(packet)
         for e in edge:
+            p=copy.copy(packet)
             p.nextHop = e.destination
-            [item.addPacket(p) for item in edge]
+            e.addPacket(p)
 
     def receivePacket(self, packet):
         self._rx.append(packet)
@@ -157,6 +157,8 @@ class Edge(object):
     def handOff(self, packet):
         packet.nextHop.receivePacket(packet)
         self._transit.remove(packet)
+        print("Packet handed over to Node {0}"
+              .format(packet.nextHop._ID))
 
     def get_Info(self):
         return (self._metric, self._destination)
