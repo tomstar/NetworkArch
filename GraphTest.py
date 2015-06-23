@@ -15,6 +15,8 @@ class GraphTest(unittest.TestCase):
     cases = []
     cases.append([[0, 1, 2, 1], [1, 0, 7, 3],
                   [3, 1, 0, 4], [5, 4, 2, 0]])
+    cases.append([[0, 1, 0, 13], [1, 0, 1, 0],
+                  [0, 1, 0, 0], [13, 0, 0, 0]])
     cases.append([[1, 1, 2, 1], [1, 1, 7, 3],
                   [3, 1, 1, 4], [5, 4, 2, 1]])
     cases.append([[False, 1, False, False], [1, False, 7, False],
@@ -22,7 +24,7 @@ class GraphTest(unittest.TestCase):
     cases.append([])
     cases.append([[1]])
 
-    case100Nodes = [[randint(0, 1) * randint(0, 1) * randint(0, 1) * randint(1, 3) if n != m
+    case100Nodes = [[randint(1, 1) * randint(1, 1) * randint(1, 1) if n != m
                      else False for n in range(100)]
                     for m in range(100)]
     cases.append(case100Nodes)
@@ -155,7 +157,14 @@ class GraphTest(unittest.TestCase):
             while(g.process()):
                 steps = steps + 1
                 packets = sum([len(edge._transit) for edge in g.edges])
-                print("Step: {0} ({1} Packets)".format(steps, packets))
+                packetSize = sum([sum([len(packet.RoutingTable) for packet in edge._transit])
+                    for edge in g.edges])
+                try:
+                    avgSize = packetSize/packets
+                except ZeroDivisionError:
+                    avgSize = 0
+                print("Step: {0} ({1} Packets\n"
+                      "Average Packet Size: {2})".format(steps, packets, avgSize))
 
             tableLength = [len(node._routingTable) for node in g.nodes]
             try:

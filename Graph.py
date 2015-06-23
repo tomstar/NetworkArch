@@ -135,6 +135,7 @@ class Node(object):
         self._rx = []
         self._tx = []
         self._routingTable = {}
+        self._tableUpdates = {}
 
     def updateTableFromConnections(self):
         """
@@ -173,6 +174,7 @@ class Node(object):
                 None
             )
         if update:
+            self._tableUpdates = self._routingTable
             self.broadcastTablechange()
 
     def updateTableFromPacket(self, packet):
@@ -187,11 +189,13 @@ class Node(object):
                 except KeyError:
                     pass
                 else:
-                    self._routingTable[entry.destination.ID] = RoutingTableEntry(
+                    newEntry = RoutingTableEntry(
                         entry.destination,
                         packet.lastNode,
                         self._routingTable[packet.lastNode.ID].metric + entry.metric,
                         None)
+                    self._routingTable[entry.destination.ID] = newEntry
+                    self._tableUpdates[entry.destination.ID] = newEntry
                     update = True
             else:
                 try:
@@ -200,11 +204,13 @@ class Node(object):
                     pass
                 else:
                     if ((self._routingTable[packet.lastNode.ID].metric + entry.metric) < (self._routingTable[entry.destination.ID].metric)):
-                        self._routingTable[entry.destination.ID] = RoutingTableEntry(
+                        newEntry = RoutingTableEntry(
                             entry.destination,
                             packet.lastNode,
                             self._routingTable[packet.lastNode.ID].metric + entry.metric,
                             None)
+                        self._routingTable[entry.destination.ID] = newEntry
+                        self._tableUpdates[entry.destination.ID] = newEntry
                         update = True
         return update
 
@@ -212,9 +218,10 @@ class Node(object):
         packet = Packet.ControlPacket(
             self,
             self,
-            self._routingTable
+            copy.copy(self._tableUpdates)
             )
         self.queuePacket(packet)
+        self._tableUpdates = {}
 
     def queuePacket(self, packet):
         """
