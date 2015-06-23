@@ -2,7 +2,9 @@
 __author__ = 'Thomas'
 
 import unittest
-from random import sample
+from random import sample, randint
+from statistics import mean, StatisticsError
+import matplotlib as mpl
 
 import Graph
 import Packet
@@ -20,6 +22,11 @@ class GraphTest(unittest.TestCase):
     cases.append([])
     cases.append([[1]])
 
+    case100Nodes = [[randint(0, 1) * randint(0, 1) * randint(0, 1) * randint(1, 3) if n != m
+                     else False for n in range(100)]
+                    for m in range(100)]
+    cases.append(case100Nodes)
+
     def test_buildFromAdjacency(self):
         for adj in GraphTest.cases:
             g = Graph.Graph()
@@ -27,9 +34,6 @@ class GraphTest(unittest.TestCase):
             try:
                 self.assertEqual(len(g.nodes[0].connections),
                                  (len(adj[0]) - adj[0].count(False)))
-                self.assertEqual(g.nodes[2].connections[-1].destination,
-                                 g.nodes[3])
-
             except IndexError:
                 pass
 
@@ -100,7 +104,11 @@ class GraphTest(unittest.TestCase):
             g.adjacencyToGraph(adj)
             g.updateRoutingTables()
             for node in g.nodes:
-                self.assertEqual(len(node.connections),
+                if node in [edge.destination for edge in node.connections]:
+                    adjustment = 0
+                else:
+                    adjustment = 1
+                self.assertEqual(len(node.connections) + adjustment,
                                  len(node._routingTable))
 
     def test_PacketPropagation(self):
@@ -119,20 +127,48 @@ class GraphTest(unittest.TestCase):
             g = Graph.Graph()
             g.adjacencyToGraph(testcase)
             for node in g.nodes:
-                otherNodes = [n if n != node for n in g.nodes]
-                node.sendPacket(Packet.ControlPacket(None,
-                                                     sample(otherNodes, 1),
-                                                     None),
-                                g.nodes[1].connections)
-                for k in range(max([edge.metric for edge in
-                                    g.nodes[1].connections])):
-                    g.process()
-                    for e in g.nodes[1].connections:
-                        if k+1==e.metric:
-                            self.assertEqual(len(e.destination._rx), 1)
-                        else:
-                            for packet in e._transit:
-                                self.assertGreaterEqual(packet.transitTime, 1)
+                otherNodes = list(set([node]) ^ set(g.nodes))
+                if any(otherNodes):
+                    node.queuePacket(
+                        Packet.ControlPacket(None,
+                                             sample(otherNodes, 1),
+                                             None))
+            step = 0
+            # while(g.process()):
+            #     step = step + 1
+            #     for e in g.edges:
+            #         if (step) >= e.metric:
+            #             # Edges with metric x have handed over all
+            #             # packets after x timesteps
+            #             # self.assertEqual(len(e._transit), 0)
+            #             pass
+            #         else:
+            #             for packet in e._transit:
+            #                 self.assertGreaterEqual(packet.transitTime, 1)
+
+    def test_broadcastTable(self):
+        for adj in self.cases:
+            g = Graph.Graph()
+            g.adjacencyToGraph(adj)
+            g.updateRoutingTables()
+            steps = 0
+            while(g.process()):
+                steps = steps + 1
+                packets = sum([len(edge._transit) for edge in g.edges])
+                print("Step: {0} ({1} Packets)".format(steps, packets))
+
+            tableLength = [len(node._routingTable) for node in g.nodes]
+            try:
+                avgTableLength = mean(tableLength)
+                sumTableLength = sum(tableLength)
+            except StatisticsError:
+                tableLength = 0
+                sumTableLength = 0
+
+            print("Steps: {0}\nAverage Table: {1}"
+                  .format(steps, avgTableLength))
+            self.assertEqual(len(g.nodes) * len(g.nodes),
+                             sumTableLength)
 
 
 if __name__ == '__main__':

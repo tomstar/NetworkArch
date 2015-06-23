@@ -4,6 +4,7 @@ import copy
 from random import shuffle
 
 import Exceptions as ex
+import Packet
 
 
 class Graph(set):
@@ -37,6 +38,21 @@ class Graph(set):
         add node to graph
         """
         self._nodes.append(n)
+
+    def checkConnectivity(self, adj):
+        adj = self.adjToBool(adj)
+        initial = adj[0]
+        previous = initial
+        current = (False, False)
+        while (set(previous)^set(current)):
+            for val, el in enumerate(current):
+                if val:
+                    current = current or previous[el]
+                    previous[el] = current[el]
+        return current
+
+    def adjToBool(self, adj):
+        return [[bool(m) for m in n] for n in adj]
 
     def adjacencyToGraph(self, adj):
         """
@@ -100,12 +116,15 @@ class Graph(set):
         execute processing steps for all nodes and edges
         in random order
         """
+        # processed: a packet process has taken place
+        processed = False
         objects = copy.copy(self.edges)
         objects.extend(self.nodes)
         if randomOrder:
             shuffle(objects)
         for k in objects:
-            k.process()
+            processed = k.process() or processed
+        return processed
 
 
 class Node(object):
@@ -115,20 +134,87 @@ class Node(object):
         self._connections = []
         self._rx = []
         self._tx = []
-        self._routingTable = []
+        self._routingTable = {}
 
     def updateTableFromConnections(self):
         """
         add entries to routing table if they don't already exist
         """
-        for item in self._connections:
+        update = False
+        for item in self.connections:
             try:
-                self._routingTable.index(item.destination)
-            except ValueError:
-                self._routingTable.append(RoutingTableEntry(item.destination,
-                                                            item.destination,
-                                                            item.metric,
-                                                            None))
+                self._routingTable[item.destination.ID]
+            except KeyError:
+                self._routingTable[item.destination.ID] = RoutingTableEntry(
+                    item.destination,
+                    item.destination,
+                    item.metric,
+                    None
+                )
+                update = True
+            else:
+                self._routingTable[item.destination.ID].updateEntry(
+                    RoutingTableEntry(
+                        item.destination,
+                        item.destination,
+                        item.metric,
+                        None
+                    )
+                )
+                update = True
+        # if not explicitly set: loopback with metric 0
+        try:
+            self._routingTable[self.ID]
+        except KeyError:
+            self._routingTable[self.ID] = RoutingTableEntry(
+                self,
+                self,
+                0,
+                None
+            )
+        if update:
+            self.broadcastTablechange()
+
+    def updateTableFromPacket(self, packet):
+        update = False
+        entries = list(packet.RoutingTable.values())
+        for entry in entries:
+            try:
+                self._routingTable[entry.destination.ID]
+            except KeyError:
+                try:
+                    self._routingTable[packet.lastNode.ID]
+                except KeyError:
+                    pass
+                else:
+                    self._routingTable[entry.destination.ID] = RoutingTableEntry(
+                        entry.destination,
+                        packet.lastNode,
+                        self._routingTable[packet.lastNode.ID].metric + entry.metric,
+                        None)
+                    update = True
+            else:
+                try:
+                    self._routingTable[packet.lastNode.ID]
+                except KeyError:
+                    pass
+                else:
+                    if ((self._routingTable[packet.lastNode.ID].metric + entry.metric) < (self._routingTable[entry.destination.ID].metric)):
+                        self._routingTable[entry.destination.ID] = RoutingTableEntry(
+                            entry.destination,
+                            packet.lastNode,
+                            self._routingTable[packet.lastNode.ID].metric + entry.metric,
+                            None)
+                        update = True
+        return update
+
+    def broadcastTablechange(self):
+        packet = Packet.ControlPacket(
+            self,
+            self,
+            self._routingTable
+            )
+        self.queuePacket(packet)
 
     def queuePacket(self, packet):
         """
@@ -140,6 +226,7 @@ class Node(object):
         """
         send a copy of the packet on all edges in 'edge'
         """
+        packet.lastNode = self
         for e in edge:
             p = copy.copy(packet)
             p.nextHop = e.destination
@@ -156,7 +243,8 @@ class Node(object):
     def connections(self):
         return self._connections
 
-    def getID(self):
+    @property
+    def ID(self):
         return self._ID
 
     def add_connection(self, nodes, metric=0):
@@ -167,7 +255,22 @@ class Node(object):
         """
         process operations for the node
         """
-        pass
+        processed = False
+        tableUpdate = False
+        for received in self._rx:
+            if received.destination == self:
+                pass
+            else:
+                tableUpdate = self.updateTableFromPacket(received) or tableUpdate
+        if tableUpdate:
+            self.broadcastTablechange()
+
+        for packet in self._tx:
+            self.sendPacket(packet, self.connections)
+            self._tx.remove(packet)
+            processed = True
+
+        return processed
 
 
 class Edge(object):
@@ -204,8 +307,11 @@ class Edge(object):
         if their transittime is up
         else keep them on the Edge and reduce remaining time by 1.
         """
-        [self.handOff(item) if item.transitTime <= 1 else item.cycle()
+        processed = len(self._transit) > 0
+        [self.handOff(item) if item.transitTime <= 1
+         else item.cycle()
          for item in self._transit]
+        return processed
 
     def handOff(self, packet):
         """
@@ -213,8 +319,6 @@ class Edge(object):
         """
         packet.nextHop.receivePacket(packet)
         self._transit.remove(packet)
-        print("Packet handed over to Node {0}"
-              .format(packet.nextHop._ID))
 
     def get_Info(self):
         return (self._metric, self._destination)
